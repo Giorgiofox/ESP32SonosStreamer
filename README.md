@@ -35,7 +35,7 @@ irrelevant for vinyl.
 ```mermaid
 flowchart LR
     TT[Turntable] --> PRE[Phono preamp RIAA]
-    PRE -->|line level| ADC[I2S ADC PCM1802]
+    PRE -->|line level| ADC[I2S ADC WM8782]
     ADC -->|I2S: BCK/LRCK/DOUT + MCLK| ESP[ESP32]
     ESP -->|"HTTP WAV stream (:8080/stream.wav)"| SONOS[Sonos]
     ESP -->|"UPnP SOAP SetAVTransportURI + Play (:1400)"| SONOS
@@ -55,7 +55,7 @@ Final data path: **local source (ADC) -> HTTP out -> Sonos**. Outbound traffic o
 | Stability test (pink noise + real track via proxy) | Done |
 | **Zone manager** - discover zones (SSDP + topology) and pick the target coordinator | Done (tested: 3 zones discovered, select/play works) |
 | **Web UI + JSON API** - dashboard, zone picker, volume, live stats | Done (tested on device) |
-| **Spike #2** - real I2S capture from the PCM1802 + ring buffer | Pending ADC |
+| **Spike #2** - real I2S capture from the WM8782 + ring buffer | Pending ADC |
 | Phono preamp + turntable integration | Pending |
 | OLED status display (SSD1306) | Planned |
 | Rotary encoder - zone select + volume | Planned |
@@ -79,7 +79,7 @@ Realtime target = **176.4 kB/s**.
 | Component | Choice | Notes |
 |-----------|--------|-------|
 | MCU | **ESP32** (tested: ESP32-D0WD-V3 classic) | I2S RX + MCLK. S3 + PSRAM optional for a larger buffer |
-| ADC | **PCM1802** (or PCM1808) 24-bit/96k I2S | Must be an **ADC (A/D)**, not a DAC (PCM5102 is wrong). Needs **line level** |
+| ADC | **WM8782** I2S ADC board (RCA line inputs, onboard 24.576 MHz clock, master/slave) | Must be an **ADC (A/D)**, not a DAC (PCM5102 is wrong). Needs **line level**. PCM1802 is a cheaper fallback |
 | Phono preamp | Schiit Mani 2 / ART DJPRE II, or a turntable with a built-in preamp | RIAA curve. Do not wire the cartridge directly to the ADC |
 | Power | Dedicated low-noise LDO for the analog side | Supply noise degrades audio quality |
 
@@ -133,7 +133,7 @@ PCM WAV from a host to Sonos - handy to listen to a full track end to end.
 
 ## Roadmap
 
-1. **Spike #2**: I2S RX from the PCM1802 -> ring buffer -> stream (replaces the test generator).
+1. **Spike #2**: I2S RX from the WM8782 -> ring buffer -> stream (replaces the test generator).
 2. Phono preamp + tests with the real turntable.
 3. Rotary encoder for volume -> UPnP `RenderingControl SetVolume` (volume does **not** go
    through the audio stream).

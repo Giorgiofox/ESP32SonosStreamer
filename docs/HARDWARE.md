@@ -1,38 +1,44 @@
 # Hardware - planned wiring (Spike #2)
 
-> Planned **PCM1802 <-> ESP32** wiring. To confirm once the ADC arrives: pin names vary
-> slightly between modules.
+> Planned **WM8782 I2S ADC board <-> ESP32** wiring. To confirm once the board arrives:
+> pin labels vary slightly between modules.
 
-## PCM1802 (24-bit I2S ADC)
+## WM8782 I2S ADC board (chosen)
 
-The PCM1802 typically runs in **master mode**: it generates `BCK` and `LRCK` from a system
-clock (`SCKI`). Many modules have the oscillator or a divider on board, or require `SCKI` from
-the MCU. As a result:
+Audiophile 24-bit ADC (Wolfson/Cirrus WM8782) on a breakout with **RCA L/R line inputs**
+(plus a 3.5 mm jack), an **onboard 24.576 MHz oscillator** (so MCLK is handled by the board),
+and a **Master/Slave** switch.
 
-- **ESP32 = I2S RX in slave mode** (receives BCK/LRCK from the PCM1802), or
-- **ESP32 = master** and provides `MCLK`/`SCKI` to the PCM1802 (256 x fs = 11.2896 MHz at 44.1k).
+Rate support per the board:
+- **Master mode** (board drives the clocks): 192 k or 96 k only.
+- **Slave mode** (the ESP32 drives BICK/LRCK): also 48 k / 16-bit.
 
-To be decided based on the module (`MODE`/`FMT` jumpers). Preferably ESP32 as master providing
-MCLK, so the sample rate is driven by the MCU.
+We target **48 kHz / 16-bit** (the Sonos internal rate), so use **Slave mode**: the ESP32 is
+the I2S master and generates BICK (bit clock) and LRCK (word select); the board provides MCLK
+from its own oscillator plus the DATA line. This matches the stream format directly, with no
+resampling on the ESP32.
+
+(Alternative: Master mode at 96 k / 24-bit, then downsample to 48/16 on the ESP32 - more CPU,
+not needed.)
 
 ## Pinout (indicative)
 
-| PCM1802 | ESP32 (example) | Notes |
-|--------:|:----------------|-------|
-| VCC     | 3V3             | digital side |
-| GND     | GND             | common ground |
-| LIN/RIN | <- phono preamp | **line-level** L/R input |
-| DOUT    | GPIO25 (I2S DIN)| I2S data to the ESP32 |
-| BCK     | GPIO26 (I2S BCK)| bit clock |
-| LRCK    | GPIO22 (I2S WS) | word/frame select |
-| SCKI    | GPIO0 (I2S MCLK)| system clock (if ESP32 is master) |
-| FMT/MODE| jumper          | I2S format, master/slave |
+| WM8782 board | ESP32 (example) | Notes |
+|-------------:|:----------------|-------|
+| VCC (5V)     | 5V              | board runs at 5V |
+| GND / DGND   | GND             | common ground |
+| RCA L/R in   | <- phono preamp | **line-level** input |
+| DATA         | GPIO25 (I2S DIN)| I2S data to the ESP32 |
+| BICK         | GPIO26 (I2S BCK)| bit clock (ESP32 drives it in slave mode) |
+| LRCK         | GPIO22 (I2S WS) | word/frame select (ESP32 drives it) |
+| MCLK         | (from board osc)| provided by the onboard 24.576 MHz clock |
+| Master/Slave | switch -> Slave | so the ESP32 clocks 48 k / 16-bit |
 
 Note: GPIO choices to be confirmed (avoid boot strapping pins). Update after testing.
 
 ## Power
 
-- Analog side of the PCM1802 on a **dedicated low-noise LDO**, with the analog ground separated
+- Analog side of the ADC on a **dedicated low-noise LDO**, with the analog ground separated
   from the digital ground and joined at a single point.
 - Supply noise is the number one factor that degrades audio: take care with decoupling.
 

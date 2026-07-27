@@ -14,6 +14,7 @@ static const char *TAG = "audio";
 #define CHANNELS    2
 #define BITS        16
 #define STREAM_PATH "/stream.wav"
+#define TARGET_BUFFER_SEC 3.0f   // fill fast up to here, then pace to realtime
 
 static uint16_t       s_port = 8080;
 static volatile audio_source_t s_source = AUDIO_SRC_SILENCE;
@@ -147,13 +148,22 @@ static void serve_client(int cs, const char *ip) {
         s_stats.total_bytes += total;
 
         int64_t now = esp_timer_get_time();
+
+        // Audio sent minus wall-clock elapsed = how far ahead of realtime we are
+        // (the depth of the Sonos + in-flight buffer), in seconds.
+        double ahead = (double)s_stats.total_bytes / byte_rate - (now - t0) / 1e6;
+
+        // Pace to realtime once the target buffer is reached: without this, Sonos
+        // pre-fetches unboundedly (it treats the huge WAV as a file) and the buffer -
+        // and thus the latency to source changes - grows forever. One block delay keeps
+        // the lead steady around TARGET_BUFFER_SEC.
+        if (ahead > TARGET_BUFFER_SEC)
+            vTaskDelay(pdMS_TO_TICKS(FRAMES * 1000 / SAMPLE_RATE + 1));
+
         if (now - tlog >= 1000000) {
             s_stats.kbps = (bytes_win / 1024.0f) / ((now - tlog) / 1e6f);
             s_stats.max_batch_us = max_batch;
-            // Audio sent minus wall-clock elapsed = how far ahead of realtime we are
-            // (the depth of the Sonos + in-flight buffer), in seconds.
-            float ahead = (float)((double)s_stats.total_bytes / byte_rate - (now - t0) / 1e6);
-            s_stats.buffer_sec = ahead > 0 ? ahead : 0;
+            s_stats.buffer_sec = ahead > 0 ? (float)ahead : 0;
             tlog = now; bytes_win = 0; max_batch = 0;
         }
     }

@@ -74,7 +74,9 @@ Open `http://<esp-ip>/` for the dashboard (status, zone picker, volume, source t
 ```
 
 - `buffer_s`: seconds of audio buffered ahead of realtime (audio sent minus wall-clock
-  elapsed) - an estimate of the Sonos + in-flight buffer depth.
+  elapsed) - an estimate of the Sonos + in-flight buffer depth. The sender fills fast up to
+  `TARGET_BUFFER_SEC` (3 s) then paces to realtime; without this the Sonos pre-fetches the
+  huge WAV unboundedly and the buffer (and the latency to a source change) grows forever.
 - To reconnect after `disconnect`, just select a zone again.
 
 ## UPnP details

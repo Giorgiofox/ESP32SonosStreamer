@@ -4,7 +4,10 @@
 #include <strings.h>
 #include "esp_log.h"
 #include "esp_http_client.h"
+#include "nvs.h"
 #include "lwip/sockets.h"
+
+#define NVS_NS "lpstreamer"
 
 static const char *TAG = "sonos";
 
@@ -276,6 +279,14 @@ bool sonos_select(int idx, const char *stream_url) {
 
     g_active = idx;
     ESP_LOGI(TAG, "selected zone [%d] %s @ %s", idx, g_zones[idx].name, ip);
+
+    // persist as last-used zone (matched by name on next boot)
+    nvs_handle_t h;
+    if (nvs_open(NVS_NS, NVS_READWRITE, &h) == ESP_OK) {
+        nvs_set_str(h, "last_zone", g_zones[idx].name);
+        nvs_commit(h);
+        nvs_close(h);
+    }
     return true;
 }
 
@@ -294,4 +305,32 @@ bool sonos_set_volume(int vol) {
 bool sonos_stop_active(void) {
     if (g_active < 0) return false;
     return av_stop(g_zones[g_active].ip);
+}
+
+bool sonos_autoconnect(const char *stream_url) {
+    char name[SONOS_NAME_LEN];
+    size_t len = sizeof(name);
+    nvs_handle_t h;
+    bool got = false;
+    if (nvs_open(NVS_NS, NVS_READONLY, &h) == ESP_OK) {
+        got = (nvs_get_str(h, "last_zone", name, &len) == ESP_OK);
+        nvs_close(h);
+    }
+    if (!got) { ESP_LOGI(TAG, "no last zone stored"); return false; }
+    for (int i = 0; i < g_zone_count; i++) {
+        if (strcmp(g_zones[i].name, name) == 0) {
+            ESP_LOGI(TAG, "auto-connecting to last zone '%s'", name);
+            return sonos_select(i, stream_url);
+        }
+    }
+    ESP_LOGW(TAG, "last zone '%s' not currently available", name);
+    return false;
+}
+
+bool sonos_disconnect(void) {
+    if (g_active < 0) return false;
+    bool ok = av_stop(g_zones[g_active].ip);
+    ESP_LOGI(TAG, "disconnected from zone [%d] %s", g_active, g_zones[g_active].name);
+    g_active = -1;
+    return ok;
 }

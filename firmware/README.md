@@ -35,6 +35,16 @@ Dependencies (ESP-IDF `REQUIRES`): `webui -> sonos, audio_engine, net_wifi`;
    coordinator, which is the correct target to stream to.
 4. `webui_start(80)` serves the dashboard and JSON API. Selecting a zone points that
    coordinator at `http://<esp-ip>:8080/stream.wav` via UPnP `SetAVTransportURI` + `Play`.
+5. The last selected zone is persisted in NVS; on boot the firmware auto-reconnects to it
+   (`sonos_autoconnect`), so powering the system up needs no web interaction.
+
+The stream is **48 kHz / 16-bit / stereo** (192 kB/s), matching the Sonos internal rate so
+no resample happens. Hi-res (96 kHz / 24-bit) is pointless here: Sonos downsamples everything
+to 48/16 internally.
+
+Multiple zones at once: group the rooms in the Sonos app - a group appears as a single
+coordinator here, and streaming to it plays all rooms in sync. Grouping from this UI (UPnP
+`x-rincon:` join) is a planned feature.
 
 ## Web UI / JSON API
 
@@ -47,19 +57,25 @@ Open `http://<esp-ip>/` for the dashboard (status, zone picker, volume, source t
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET  | `/`            | dashboard (HTML) |
-| GET  | `/api/status`  | JSON: ip, zone, streaming, client, kbps, sent, batch_us, rssi, source |
+| GET  | `/api/status`  | JSON: ip, zone, streaming, client, kbps, sent, batch_us, buffer_s, rssi, source, rate, bits, ch |
 | GET  | `/api/zones`   | JSON: `{active, zones:[{name, ip}]}` |
-| POST | `/api/select?i=N` | stream to zone index N (stops the previous, plays the new) |
+| POST | `/api/select?i=N` | stream to zone index N (stops the previous, plays the new); persisted as last zone |
 | POST | `/api/volume?v=N` | set volume 0..100 on the active coordinator (UPnP `SetVolume`) |
 | POST | `/api/source?s=pink\|silence` | switch the test source |
+| POST | `/api/disconnect` | stop the active coordinator and release it (e.g. to use the TV) |
 | POST | `/api/rescan`  | re-run Sonos discovery |
 
 `/api/status` example:
 
 ```json
-{"ip":"192.168.1.15","zone":"Living Room","streaming":true,"client":"192.168.1.125",
- "kbps":190.2,"sent":33468416,"batch_us":80173,"rssi":-60,"source":"pink"}
+{"ip":"192.168.1.15","zone":"Soggiorno","streaming":true,"client":"192.168.1.125",
+ "kbps":337.0,"sent":1400000,"batch_us":28000,"buffer_s":3.1,"rssi":-58,
+ "source":"pink","rate":48000,"bits":16,"ch":2}
 ```
+
+- `buffer_s`: seconds of audio buffered ahead of realtime (audio sent minus wall-clock
+  elapsed) - an estimate of the Sonos + in-flight buffer depth.
+- To reconnect after `disconnect`, just select a zone again.
 
 ## UPnP details
 
@@ -89,6 +105,5 @@ idf.py -p /dev/cu.usbserial-0001 flash monitor
 - Audio source is still the test generator; the I2S ADC path is a later stage.
 - One stream client at a time (a single Sonos coordinator). Grouping several rooms in
   the Sonos app and streaming to that group's coordinator plays them together.
-- Selection is not yet persisted across reboots.
-- Planned: SSD1306 OLED status display and a KY-040 rotary encoder that mirror the
-  web UI (zone select + volume).
+- Planned: group zones from this UI (UPnP `x-rincon:` join); SSD1306 OLED status display
+  and a KY-040 rotary encoder that mirror the web UI (zone select + volume).

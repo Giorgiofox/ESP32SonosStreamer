@@ -11,6 +11,7 @@
 // The user then picks a target zone from the web UI (or, later, the rotary encoder),
 // which points that Sonos coordinator at our stream URL and starts playback.
 
+#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -38,5 +39,12 @@ void app_main(void) {
     ESP_LOGI(TAG, "%d Sonos zones discovered", n);
 
     webui_start(WEB_PORT);
+
+    // Auto-reconnect to the last used zone so turning on the system needs no web action.
+    char url[96];
+    snprintf(url, sizeof(url), "http://%s:%u%s",
+             net_wifi_ip(), audio_engine_port(), audio_engine_path());
+    sonos_autoconnect(url);
+
     ESP_LOGI(TAG, "ready - open http://%s/ to pick a zone", net_wifi_ip());
 }

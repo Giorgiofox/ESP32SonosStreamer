@@ -137,9 +137,12 @@ PCM WAV from a host to Sonos - handy to listen to a full track end to end.
 2. Phono preamp + tests with the real turntable.
 3. Rotary encoder for volume -> UPnP `RenderingControl SetVolume` (volume does **not** go
    through the audio stream).
-4. Zone selector: choose which speaker set / coordinator to stream to.
-5. Robustness: WiFi/Sonos reconnection, auto-start, multi-zone handling.
-6. Turntable control from the web UI (idea): power on/off and play/stop by wiring in
+4. Zone selector: choose which speaker set / coordinator to stream to. (done: pick zone,
+   volume, disconnect, buffer-seconds indicator, auto-reconnect to the last zone on boot)
+5. Group zones from the UI (UPnP `x-rincon:` join), so several rooms play in sync without
+   opening the Sonos app.
+6. Robustness: WiFi/Sonos reconnection, auto-start, multi-zone handling.
+7. Turntable control from the web UI (idea): power on/off and play/stop by wiring in
    parallel to the turntable's existing buttons (relay/opto across the existing
    switches, not mechanical actuators). Plus optional auto play/stop of Sonos via
    signal detection (RMS on the ADC): drop the needle and it starts around the house.

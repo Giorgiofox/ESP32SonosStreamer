@@ -50,6 +50,7 @@
       <div class="stat"><div class="k">Max block</div><div class="v" id="batch">-</div></div>
       <div class="stat"><div class="k">WiFi RSSI</div><div class="v" id="rssi">-</div></div>
       <div class="stat"><div class="k">Format</div><div class="v" id="fmt">-</div></div>
+      <div class="stat"><div class="k">Buffer</div><div class="v" id="buf">-</div></div>
     </div>
   </div>
 
@@ -58,6 +59,7 @@
     <div class="zones" id="zones"></div>
     <div class="row" style="margin-top:12px">
       <button onclick="rescan()">Rescan</button>
+      <button onclick="disconnect()">Disconnect</button>
       <span class="muted" id="zcount"></span>
     </div>
   </div>
@@ -94,6 +96,10 @@ async function poll(){
     document.getElementById('batch').textContent = (s.batch_us/1000).toFixed(0)+' ms';
     document.getElementById('rssi').textContent = s.rssi+' dBm';
     document.getElementById('fmt').textContent = (s.rate/1000).toFixed(1)+' kHz / '+s.bits+'-bit / '+s.ch+'ch';
+    // Buffer = seconds of audio buffered ahead of realtime (Sonos + in-flight).
+    const buf = document.getElementById('buf');
+    if (s.streaming){ buf.textContent = s.buffer_s.toFixed(1)+' s'; buf.style.color = s.buffer_s>=1?'#38d39f':'#e5a23a'; }
+    else { buf.textContent='-'; buf.style.color=''; }
     document.getElementById('src-silence').className = s.source==='silence'?'sel':'';
     document.getElementById('src-pink').className = s.source==='pink'?'sel':'';
   } catch(e){}
@@ -113,6 +119,7 @@ async function loadZones(){
 async function select(i){ await fetch('/api/select?i='+i,{method:'POST'}); loadZones(); }
 async function setVol(v){ document.getElementById('volv').textContent=v; await fetch('/api/volume?v='+v,{method:'POST'}); }
 async function setSrc(s){ await fetch('/api/source?s='+s,{method:'POST'}); poll(); }
+async function disconnect(){ await fetch('/api/disconnect',{method:'POST'}); loadZones(); poll(); }
 async function rescan(){ document.getElementById('zcount').textContent='scanning...'; await fetch('/api/rescan',{method:'POST'}); loadZones(); }
 loadZones(); poll(); setInterval(poll,1000);
 </script>

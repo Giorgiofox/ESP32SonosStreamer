@@ -32,13 +32,13 @@ static esp_err_t h_status(httpd_req_t *r) {
     char json[512];
     int n = snprintf(json, sizeof(json),
         "{\"ip\":\"%s\",\"zone\":\"%s\",\"streaming\":%s,\"client\":\"%s\","
-        "\"kbps\":%.1f,\"sent\":%lld,\"batch_us\":%lld,\"rssi\":%d,\"source\":\"%s\","
+        "\"kbps\":%.1f,\"sent\":%lld,\"batch_us\":%lld,\"buffer_s\":%.1f,\"rssi\":%d,\"source\":\"%s\","
         "\"rate\":%lu,\"bits\":%u,\"ch\":%u}",
         net_wifi_ip(),
         z ? z->name : "",
         st.streaming ? "true" : "false",
         st.client_ip,
-        st.kbps, (long long)st.total_bytes, (long long)st.max_batch_us,
+        st.kbps, (long long)st.total_bytes, (long long)st.max_batch_us, st.buffer_sec,
         net_wifi_rssi(),
         audio_engine_get_source() == AUDIO_SRC_PINK ? "pink" : "silence",
         (unsigned long)audio_engine_sample_rate(),
@@ -94,6 +94,12 @@ static esp_err_t h_source(httpd_req_t *r) {
     return ESP_OK;
 }
 
+static esp_err_t h_disconnect(httpd_req_t *r) {
+    bool ok = sonos_disconnect();
+    httpd_resp_sendstr(r, ok ? "ok" : "err");
+    return ESP_OK;
+}
+
 static esp_err_t h_rescan(httpd_req_t *r) {
     int n = sonos_discover();
     char msg[32]; snprintf(msg, sizeof(msg), "%d", n);
@@ -120,6 +126,7 @@ void webui_start(uint16_t port) {
     reg(s, "/api/select",  HTTP_POST, h_select);
     reg(s, "/api/volume",  HTTP_POST, h_volume);
     reg(s, "/api/source",  HTTP_POST, h_source);
+    reg(s, "/api/disconnect", HTTP_POST, h_disconnect);
     reg(s, "/api/rescan",  HTTP_POST, h_rescan);
     ESP_LOGI(TAG, "web UI on :%u", port);
 }

@@ -29,3 +29,11 @@ bool sonos_set_volume(int vol);
 
 // Stop playback on the active coordinator.
 bool sonos_stop_active(void);
+
+// Release the speaker: stop the active coordinator and clear the active zone, so the
+// Sonos returns to its own source (e.g. TV on an Arc). Returns true on success.
+bool sonos_disconnect(void);
+
+// Auto-connect to the last selected zone (persisted in NVS), if it is among the
+// discovered zones. Call after sonos_discover(). Returns true if it reconnected.
+bool sonos_autoconnect(const char *stream_url);

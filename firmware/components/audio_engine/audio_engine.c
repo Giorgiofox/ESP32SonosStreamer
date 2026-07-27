@@ -10,7 +10,7 @@
 
 static const char *TAG = "audio";
 
-#define SAMPLE_RATE 44100
+#define SAMPLE_RATE 48000   // matches the Sonos internal rate (no resample)
 #define CHANNELS    2
 #define BITS        16
 #define STREAM_PATH "/stream.wav"
@@ -97,6 +97,7 @@ static void serve_client(int cs, const char *ip) {
     strlcpy(s_stats.client_ip, ip, sizeof(s_stats.client_ip));
     s_stats.streaming = true;
     s_stats.total_bytes = 0;
+    s_stats.buffer_sec = 0;
     s_stats.connections++;
 
     char req[512]; recv(cs, req, sizeof(req)-1, 0);   // discard request headers
@@ -118,7 +119,9 @@ static void serve_client(int cs, const char *ip) {
     if (!buf) goto done;
     pink_state_t pl = {0}, pr = {0};
 
-    int64_t tlog = esp_timer_get_time();
+    const int byte_rate = SAMPLE_RATE * CHANNELS * (BITS / 8);
+    int64_t t0 = esp_timer_get_time();
+    int64_t tlog = t0;
     int64_t bytes_win = 0, max_batch = 0;
 
     for (;;) {
@@ -147,6 +150,10 @@ static void serve_client(int cs, const char *ip) {
         if (now - tlog >= 1000000) {
             s_stats.kbps = (bytes_win / 1024.0f) / ((now - tlog) / 1e6f);
             s_stats.max_batch_us = max_batch;
+            // Audio sent minus wall-clock elapsed = how far ahead of realtime we are
+            // (the depth of the Sonos + in-flight buffer), in seconds.
+            float ahead = (float)((double)s_stats.total_bytes / byte_rate - (now - t0) / 1e6);
+            s_stats.buffer_sec = ahead > 0 ? ahead : 0;
             tlog = now; bytes_win = 0; max_batch = 0;
         }
     }
@@ -154,6 +161,7 @@ static void serve_client(int cs, const char *ip) {
 done:
     s_stats.streaming = false;
     s_stats.kbps = 0;
+    s_stats.buffer_sec = 0;
     close(cs);
     ESP_LOGI(TAG, "client %s closed", ip);
 }

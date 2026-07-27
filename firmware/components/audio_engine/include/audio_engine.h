@@ -8,6 +8,7 @@ typedef struct {
     float    kbps;             // throughput over the last window
     int64_t  total_bytes;      // bytes sent on the current connection
     int64_t  max_batch_us;     // worst-case send latency for a 10 ms block (window)
+    float    buffer_sec;       // estimated seconds of audio buffered ahead of realtime
     uint32_t connections;      // total client connections since boot
 } audio_stats_t;
 

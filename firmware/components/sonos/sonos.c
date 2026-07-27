@@ -1,6 +1,7 @@
 #include "sonos.h"
 #include <string.h>
 #include <stdlib.h>
+#include <strings.h>
 #include "esp_log.h"
 #include "esp_http_client.h"
 #include "lwip/sockets.h"
@@ -185,6 +186,12 @@ static void parse_topology(char *xml) {
     }
 }
 
+// Sort zones by name so the index -> zone mapping is stable across reboots
+// (SSDP/topology order is otherwise non-deterministic).
+static int zone_cmp(const void *a, const void *b) {
+    return strcasecmp(((const sonos_zone_t *)a)->name, ((const sonos_zone_t *)b)->name);
+}
+
 int sonos_discover(void) {
     char ip[SONOS_IP_LEN];
     if (!ssdp_find_one(ip)) { ESP_LOGW(TAG, "no Sonos found via SSDP"); return 0; }
@@ -198,6 +205,7 @@ int sonos_discover(void) {
     if (len <= 0) { free(xml); ESP_LOGW(TAG, "GetZoneGroupState failed"); return 0; }
     parse_topology(xml);
     free(xml);
+    qsort(g_zones, g_zone_count, sizeof(g_zones[0]), zone_cmp);
 
     ESP_LOGI(TAG, "found %d zones:", g_zone_count);
     for (int i = 0; i < g_zone_count; i++)
@@ -236,29 +244,35 @@ bool sonos_select(int idx, const char *stream_url) {
 
     const char *ip = g_zones[idx].ip;
 
-    char url_esc[256]; xml_esc(stream_url, url_esc, sizeof(url_esc));
-    char didl[1024];
-    snprintf(didl, sizeof(didl),
-        "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
-        "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
-        "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">"
-        "<item id=\"lp\" parentID=\"-1\" restricted=\"1\">"
-        "<dc:title>LPStreamer</dc:title>"
-        "<upnp:class>object.item.audioItem.audioBroadcast</upnp:class>"
-        "<res protocolInfo=\"http-get:*:audio/wav:*\">%s</res>"
-        "</item></DIDL-Lite>", url_esc);
-    char didl_esc[2048]; xml_esc(didl, didl_esc, sizeof(didl_esc));
+    // Big buffers on the heap: this runs in the httpd task with a limited stack.
+    char *url_esc  = malloc(256);
+    char *didl     = malloc(1024);
+    char *didl_esc = malloc(2048);
+    char *inner    = malloc(2600);
+    bool ok = url_esc && didl && didl_esc && inner;
+    if (ok) {
+        xml_esc(stream_url, url_esc, 256);
+        snprintf(didl, 1024,
+            "<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
+            "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" "
+            "xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">"
+            "<item id=\"lp\" parentID=\"-1\" restricted=\"1\">"
+            "<dc:title>LPStreamer</dc:title>"
+            "<upnp:class>object.item.audioItem.audioBroadcast</upnp:class>"
+            "<res protocolInfo=\"http-get:*:audio/wav:*\">%s</res>"
+            "</item></DIDL-Lite>", url_esc);
+        xml_esc(didl, didl_esc, 2048);
+        snprintf(inner, 2600,
+            "<InstanceID>0</InstanceID><CurrentURI>%s</CurrentURI>"
+            "<CurrentURIMetaData>%s</CurrentURIMetaData>", url_esc, didl_esc);
 
-    char inner[2600];
-    snprintf(inner, sizeof(inner),
-        "<InstanceID>0</InstanceID><CurrentURI>%s</CurrentURI>"
-        "<CurrentURIMetaData>%s</CurrentURIMetaData>", url_esc, didl_esc);
-
-    if (soap(ip, "/MediaRenderer/AVTransport/Control",
-             "urn:schemas-upnp-org:service:AVTransport:1",
-             "SetAVTransportURI", inner, NULL, 0) < 0)
-        return false;
-    if (!av_play(ip)) return false;
+        ok = soap(ip, "/MediaRenderer/AVTransport/Control",
+                  "urn:schemas-upnp-org:service:AVTransport:1",
+                  "SetAVTransportURI", inner, NULL, 0) >= 0
+             && av_play(ip);
+    }
+    free(url_esc); free(didl); free(didl_esc); free(inner);
+    if (!ok) return false;
 
     g_active = idx;
     ESP_LOGI(TAG, "selected zone [%d] %s @ %s", idx, g_zones[idx].name, ip);

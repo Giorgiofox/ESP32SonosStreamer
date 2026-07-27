@@ -108,6 +108,7 @@ void webui_start(uint16_t port) {
     cfg.server_port = port;
     cfg.max_uri_handlers = 12;
     cfg.lru_purge_enable = true;
+    cfg.stack_size = 10240;   // handlers call into sonos SOAP + esp_http_client
     httpd_handle_t s = NULL;
     if (httpd_start(&s, &cfg) != ESP_OK) { ESP_LOGE(TAG, "httpd start failed"); return; }
     reg(s, "/",            HTTP_GET,  h_root);

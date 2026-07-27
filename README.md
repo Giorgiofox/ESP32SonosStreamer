@@ -8,6 +8,12 @@ HiFi, lossless audio streamer to **Sonos** speakers over the local network, sour
 The goal: give an "analog input" to Sonos speakers that lack one (e.g. Sonos One, SYMFONISK,
 Arc, ...), so a record player can play throughout the house.
 
+<p align="center">
+  <img src="docs/dashboard.png" alt="LPStreamer web dashboard: zone picker, live throughput stats, volume and test source" width="520">
+  <br>
+  <em>Web dashboard: pick the target Sonos zone, watch live streaming stats, control volume.</em>
+</p>
+
 ---
 
 ## Key idea: no encoding
@@ -47,8 +53,8 @@ Final data path: **local source (ADC) -> HTTP out -> Sonos**. Outbound traffic o
 | "Speaker on" chime when the stream is picked up | Done |
 | Robust SOAP `SetAVTransportURI` + `Play` with retry | Done |
 | Stability test (pink noise + real track via proxy) | Done |
-| **Zone manager** - discover zones (SSDP + topology) and pick the target coordinator | Implemented (pending on-device test) |
-| **Web UI + JSON API** - dashboard, zone picker, volume, live stats | Implemented (pending on-device test) |
+| **Zone manager** - discover zones (SSDP + topology) and pick the target coordinator | Done (tested: 3 zones discovered, select/play works) |
+| **Web UI + JSON API** - dashboard, zone picker, volume, live stats | Done (tested on device) |
 | **Spike #2** - real I2S capture from the PCM1802 + ring buffer | Pending ADC |
 | Phono preamp + turntable integration | Pending |
 | OLED status display (SSD1306) | Planned |

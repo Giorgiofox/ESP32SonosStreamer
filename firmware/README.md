@@ -40,6 +40,10 @@ Dependencies (ESP-IDF `REQUIRES`): `webui -> sonos, audio_engine, net_wifi`;
 
 Open `http://<esp-ip>/` for the dashboard (status, zone picker, volume, source toggle).
 
+<p align="center">
+  <img src="../docs/dashboard.png" alt="LPStreamer web dashboard" width="520">
+</p>
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET  | `/`            | dashboard (HTML) |

@@ -94,7 +94,10 @@ async function poll(){
     document.getElementById('kbps').textContent = s.kbps.toFixed(0)+' kB/s';
     document.getElementById('sent').textContent = fmtBytes(s.sent);
     document.getElementById('batch').textContent = (s.batch_us/1000).toFixed(0)+' ms';
-    document.getElementById('rssi').textContent = s.rssi+' dBm';
+    const rssiEl = document.getElementById('rssi');
+    rssiEl.textContent = s.rssi+' dBm';
+    // green = good, amber = ok/reduced margin, red = weak (risk of dropouts)
+    rssiEl.style.color = s.rssi>=-67 ? '#38d39f' : (s.rssi>=-78 ? '#e5a23a' : '#e5484d');
     document.getElementById('fmt').textContent = (s.rate/1000).toFixed(1)+' kHz / '+s.bits+'-bit / '+s.ch+'ch';
     // Buffer = seconds of audio buffered ahead of realtime (Sonos + in-flight).
     const buf = document.getElementById('buf');

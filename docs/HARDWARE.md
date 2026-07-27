@@ -46,6 +46,24 @@ absorb the stalls:
 - the classic ESP32 has ~150 KB of free DRAM, more than enough
 - I2S DMA fills the ring, the HTTP task drains it toward Sonos
 
+## Turntable control (idea, not yet implemented)
+
+Optional future feature: drive the turntable from the web UI. Scope kept minimal:
+
+- **Power on/off** and **play/stop** by wiring **in parallel to the turntable's existing
+  buttons/switches** - a relay or optocoupler across each existing switch, so the ESP32
+  "presses" them electrically. No mechanical actuators, no arm cueing.
+- **Auto play/stop of Sonos via signal detection**: the audio engine measures the PCM RMS
+  from the ADC; when signal appears (needle down) it triggers `Play`, when it stays silent
+  for a few seconds (end of side / arm lifted) it triggers `Stop`. Software only.
+
+Safety: only switch the **low-voltage** side (the turntable's external PSU). Never switch
+mains directly with hobby wiring. Verify the PSU output first (voltage, AC vs DC): DC is a
+simple MOSFET, AC needs a relay.
+
+Planned interface: a `turntable` component with GPIO relay/opto control and an
+`/api/turntable?power=on|off` / `?speed=33|45` endpoint, mirrored by a web button.
+
 ## Phono preamp
 
 A turntable cartridge produces a **phono** signal (millivolts, with an RIAA curve to correct).

@@ -139,6 +139,12 @@ PCM WAV from a host to Sonos - handy to listen to a full track end to end.
    through the audio stream).
 4. Zone selector: choose which speaker set / coordinator to stream to.
 5. Robustness: WiFi/Sonos reconnection, auto-start, multi-zone handling.
+6. Turntable control from the web UI (idea): power on/off and play/stop by wiring in
+   parallel to the turntable's existing buttons (relay/opto across the existing
+   switches, not mechanical actuators). Plus optional auto play/stop of Sonos via
+   signal detection (RMS on the ADC): drop the needle and it starts around the house.
+   Safety: only switch the low-voltage side (external PSU), never mains directly.
+   See [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ## License
 

@@ -47,10 +47,12 @@ Final data path: **local source (ADC) -> HTTP out -> Sonos**. Outbound traffic o
 | "Speaker on" chime when the stream is picked up | Done |
 | Robust SOAP `SetAVTransportURI` + `Play` with retry | Done |
 | Stability test (pink noise + real track via proxy) | Done |
+| **Zone manager** - discover zones (SSDP + topology) and pick the target coordinator | Implemented (pending on-device test) |
+| **Web UI + JSON API** - dashboard, zone picker, volume, live stats | Implemented (pending on-device test) |
 | **Spike #2** - real I2S capture from the PCM1802 + ring buffer | Pending ADC |
 | Phono preamp + turntable integration | Pending |
-| Rotary encoder for volume (UPnP `SetVolume`) | Planned |
-| Zone selector - choose which speaker set to stream to | Planned |
+| OLED status display (SSD1306) | Planned |
+| Rotary encoder - zone select + volume | Planned |
 
 ### Stability test results (ESP32-D0WD-V3 classic, 16-bit/44.1k stereo)
 
@@ -79,8 +81,12 @@ Realtime target = **176.4 kB/s**.
 
 ## Software
 
-Framework: **ESP-IDF v5.3.2**. Main project: [`spike_idf/`](spike_idf/).
-(`spike_sine/` is an earlier Arduino version, kept for reference.)
+Framework: **ESP-IDF v5.3.2**. Main project: [`firmware/`](firmware/) - structured into
+components (`net_wifi`, `sonos`, `audio_engine`, `webui`); see
+[`firmware/README.md`](firmware/README.md) for the component layout and the full JSON API.
+
+Earlier spikes, kept for reference: [`spike_idf/`](spike_idf/) (single-file ESP-IDF spike
+that validated Sonos WAV ingest + stability), [`spike_sine/`](spike_sine/) (Arduino version).
 
 ### Build and flash
 
@@ -90,29 +96,22 @@ git clone -b v5.3.2 --recursive https://github.com/espressif/esp-idf.git ~/esp/e
 ~/esp/esp-idf/install.sh esp32
 
 # configure
-cd spike_idf
+cd firmware
 cp main/config.h.example main/config.h
-# edit main/config.h: WiFi + Sonos IP
+# edit main/config.h: WiFi credentials
 
 # build and flash
 source ~/esp/esp-idf/export.sh
 idf.py -p /dev/cu.usbserial-0001 flash monitor
 ```
 
-After reset the ESP32 connects to WiFi, starts the stream server, tells Sonos to play, and you
-hear the **chime** followed by the test content.
+After reset the ESP32 connects to WiFi, starts the stream server, discovers the Sonos zones,
+and serves the web UI. Open `http://<esp-ip>/`, pick a zone, and it starts streaming (you hear
+the **chime**, then the selected source). Switch the source to "Pink noise" for an audible
+stability test. See [`firmware/README.md`](firmware/README.md) for the full JSON API.
 
-### Test modes (`STREAM_MODE` in `config.h`)
-
-- `MODE_PINK` (default): 20 s of locally generated pink noise with throughput logging, then
-  keep-alive silence. This is the stability test that matches the final data path.
-- `MODE_PROXY`: pull a PCM WAV from an HTTP host and forward it to Sonos (to listen to real
-  music). Start a server on your PC, for example:
-  ```bash
-  ffmpeg -i track.mp3 -ar 44100 -ac 2 -c:a pcm_s16le test_hifi.wav
-  python3 -m http.server 8000   # in the folder that holds the wav
-  ```
-  and set `PROXY_HOST` / `PROXY_PORT` / `PROXY_PATH` in `config.h`.
+The reference spike in [`spike_idf/`](spike_idf/) also has a `MODE_PROXY` that forwards a real
+PCM WAV from a host to Sonos - handy to listen to a full track end to end.
 
 ---
 

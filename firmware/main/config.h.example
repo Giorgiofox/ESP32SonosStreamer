@@ -1,0 +1,12 @@
+#pragma once
+// Copy this file to config.h and fill in your values.
+// config.h is in .gitignore: do NOT commit WiFi credentials.
+
+#define WIFI_SSID   "YOUR_SSID"
+#define WIFI_PASS   "YOUR_PASSWORD"
+
+// TCP port for the HTTP WAV stream the Sonos speakers pull from.
+#define STREAM_PORT 8080
+
+// TCP port for the web management UI.
+#define WEB_PORT    80

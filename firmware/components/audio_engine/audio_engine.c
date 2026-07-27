@@ -190,3 +190,7 @@ void audio_engine_set_source(audio_source_t src) { s_source = src; }
 audio_source_t audio_engine_get_source(void) { return s_source; }
 
 audio_stats_t audio_engine_stats(void) { return s_stats; }
+
+uint32_t audio_engine_sample_rate(void) { return SAMPLE_RATE; }
+uint8_t  audio_engine_bits(void)        { return BITS; }
+uint8_t  audio_engine_channels(void)    { return CHANNELS; }

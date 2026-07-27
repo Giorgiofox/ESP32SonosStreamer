@@ -49,6 +49,7 @@
       <div class="stat"><div class="k">Sent</div><div class="v" id="sent">-</div></div>
       <div class="stat"><div class="k">Max block</div><div class="v" id="batch">-</div></div>
       <div class="stat"><div class="k">WiFi RSSI</div><div class="v" id="rssi">-</div></div>
+      <div class="stat"><div class="k">Format</div><div class="v" id="fmt">-</div></div>
     </div>
   </div>
 
@@ -92,6 +93,7 @@ async function poll(){
     document.getElementById('sent').textContent = fmtBytes(s.sent);
     document.getElementById('batch').textContent = (s.batch_us/1000).toFixed(0)+' ms';
     document.getElementById('rssi').textContent = s.rssi+' dBm';
+    document.getElementById('fmt').textContent = (s.rate/1000).toFixed(1)+' kHz / '+s.bits+'-bit / '+s.ch+'ch';
     document.getElementById('src-silence').className = s.source==='silence'?'sel':'';
     document.getElementById('src-pink').className = s.source==='pink'?'sel':'';
   } catch(e){}

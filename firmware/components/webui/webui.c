@@ -32,14 +32,17 @@ static esp_err_t h_status(httpd_req_t *r) {
     char json[512];
     int n = snprintf(json, sizeof(json),
         "{\"ip\":\"%s\",\"zone\":\"%s\",\"streaming\":%s,\"client\":\"%s\","
-        "\"kbps\":%.1f,\"sent\":%lld,\"batch_us\":%lld,\"rssi\":%d,\"source\":\"%s\"}",
+        "\"kbps\":%.1f,\"sent\":%lld,\"batch_us\":%lld,\"rssi\":%d,\"source\":\"%s\","
+        "\"rate\":%lu,\"bits\":%u,\"ch\":%u}",
         net_wifi_ip(),
         z ? z->name : "",
         st.streaming ? "true" : "false",
         st.client_ip,
         st.kbps, (long long)st.total_bytes, (long long)st.max_batch_us,
         net_wifi_rssi(),
-        audio_engine_get_source() == AUDIO_SRC_PINK ? "pink" : "silence");
+        audio_engine_get_source() == AUDIO_SRC_PINK ? "pink" : "silence",
+        (unsigned long)audio_engine_sample_rate(),
+        (unsigned)audio_engine_bits(), (unsigned)audio_engine_channels());
     httpd_resp_set_type(r, "application/json");
     return httpd_resp_send(r, json, n);
 }

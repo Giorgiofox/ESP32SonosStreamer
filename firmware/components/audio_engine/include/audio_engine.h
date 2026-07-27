@@ -28,3 +28,8 @@ void          audio_engine_set_source(audio_source_t src);
 audio_source_t audio_engine_get_source(void);
 
 audio_stats_t audio_engine_stats(void);
+
+// Stream PCM format.
+uint32_t audio_engine_sample_rate(void);
+uint8_t  audio_engine_bits(void);
+uint8_t  audio_engine_channels(void);

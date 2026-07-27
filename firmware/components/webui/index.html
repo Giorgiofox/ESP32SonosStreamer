@@ -96,8 +96,9 @@ async function poll(){
     document.getElementById('batch').textContent = (s.batch_us/1000).toFixed(0)+' ms';
     const rssiEl = document.getElementById('rssi');
     rssiEl.textContent = s.rssi+' dBm';
-    // green = good, amber = ok/reduced margin, red = weak (risk of dropouts)
-    rssiEl.style.color = s.rssi>=-67 ? '#38d39f' : (s.rssi>=-78 ? '#e5a23a' : '#e5484d');
+    // Calibrated to our low bitrate (~1.5 Mbps + 3 s buffer), not to strict WiFi norms:
+    // green = fine, amber = reduced margin, red = genuinely weak (dropout risk).
+    rssiEl.style.color = s.rssi>=-80 ? '#38d39f' : (s.rssi>=-87 ? '#e5a23a' : '#e5484d');
     document.getElementById('fmt').textContent = (s.rate/1000).toFixed(1)+' kHz / '+s.bits+'-bit / '+s.ch+'ch';
     // Buffer = seconds of audio buffered ahead of realtime (Sonos + in-flight).
     const buf = document.getElementById('buf');

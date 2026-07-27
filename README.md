@@ -140,9 +140,14 @@ PCM WAV from a host to Sonos - handy to listen to a full track end to end.
 4. Zone selector: choose which speaker set / coordinator to stream to. (done: pick zone,
    volume, disconnect, buffer-seconds indicator, auto-reconnect to the last zone on boot)
 5. Group zones from the UI (UPnP `x-rincon:` join), so several rooms play in sync without
-   opening the Sonos app.
-6. Robustness: WiFi/Sonos reconnection, auto-start, multi-zone handling.
-7. Turntable control from the web UI (idea): power on/off and play/stop by wiring in
+   opening the Sonos app. (For now: group them in the Sonos app and the group shows up here
+   as a single zone.)
+6. Song recognition: capture a short clip and identify the track via a cloud service
+   (AudD / ACRCloud - Shazam has no open REST API). The browser uploads a clip the ESP32
+   exposes at `/api/clip.wav`, then the title/artist is shown in the dashboard and pushed
+   back to Sonos as DIDL metadata. Optional (needs internet), after the ADC is wired.
+7. Robustness: WiFi/Sonos reconnection, auto-start, multi-zone handling.
+8. Turntable control from the web UI (idea): power on/off and play/stop by wiring in
    parallel to the turntable's existing buttons (relay/opto across the existing
    switches, not mechanical actuators). Plus optional auto play/stop of Sonos via
    signal detection (RMS on the ADC): drop the needle and it starts around the house.

@@ -1,0 +1,11 @@
+# Target
+CONFIG_IDF_TARGET="esp32"
+
+# HTTP server: buffer piu' grandi per header + stream
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+
+# Log
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# Bump stack task main (SOAP + xml)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

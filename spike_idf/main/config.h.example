@@ -1,0 +1,36 @@
+#pragma once
+// Copy this file to config.h and fill in your values.
+// config.h is in .gitignore: do NOT commit WiFi credentials.
+
+// ---- WiFi ----
+#define WIFI_SSID     "YOUR_SSID"
+#define WIFI_PASS     "YOUR_PASSWORD"
+
+// ---- Sonos target (zone coordinator) ----
+// Coordinator IP: Sonos app > Settings > System > About, or
+// http://<ip>:1400/xml/device_description.xml . In a group, use the coordinator.
+#define SONOS_IP      "192.168.1.50"
+#define SONOS_PORT    1400
+
+// ---- HTTP stream server (on the ESP32) ----
+#define STREAM_PORT   8080
+#define STREAM_PATH   "/stream.wav"
+
+// ---- Audio format ----
+#define SAMPLE_RATE   44100
+#define CHANNELS      2
+#define BITS          16
+
+// ---- Test tone ----
+#define TONE_HZ       440.0f
+
+// ---- Stream mode ----
+#define MODE_PINK     0   // locally generated pink noise (stability test)
+#define MODE_PROXY    1   // proxy: pull a WAV from a host and forward it to Sonos
+#define STREAM_MODE   MODE_PINK
+
+// ---- Proxy source (only when STREAM_MODE == MODE_PROXY) ----
+// HTTP server exposing a PCM .wav file (e.g. python3 -m http.server 8000).
+#define PROXY_HOST    "192.168.1.100"
+#define PROXY_PORT    8000
+#define PROXY_PATH    "/test_hifi.wav"
